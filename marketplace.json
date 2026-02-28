@@ -1,0 +1,9 @@
+{
+  "plugins": [
+    {
+      "name": "crucible",
+      "path": ".",
+      "description": "Two debater agents directly argue with each other across multiple rounds until they converge on the most correct answer"
+    }
+  ]
+}
