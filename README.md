@@ -267,6 +267,57 @@ crucible/
 
 ---
 
+## Live Viewer (optional)
+
+The Viewer is a real-time game-like UI that shows the debate as it unfolds — agents as player cards arranged in an arena, animated attack arrows flying between them, HP bars that drain on valid hits, and a live speech panel showing each agent's current statement.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  ⚔ CRUCIBLE  ·  Round 2 — Cross-Attack                 │
+│  Task: design a rate limiter                            │
+├────────────────────────────────┬────────────────────────┤
+│                                │ Alpha → Beta  ATTACK   │
+│      🔵 ALPHA                  │ [FATAL] Your token      │
+│      ⚡ ATTACKING               │ bucket has a race       │
+│      ████████░░                │ condition on the        │
+│        ↘                       │ refill thread…          │
+│         [  ARENA  ]            ├────────────────────────┤
+│        ↗                       │ LOG                     │
+│      🔴 BETA                   │ ATTACK  Alpha→Beta      │
+│      🛡 DEFENDING               │ DEFEND  Beta (R2)       │
+│      ██████░░░░                │ PHASE   Round 3         │
+└────────────────────────────────┴────────────────────────┘
+```
+
+### Setup
+
+```bash
+cd crucible/viewer
+npm install
+node server.js
+```
+
+The server prints the URL and the export command you need. Open the URL in your browser, then in your shell:
+
+```bash
+export CRUCIBLE_EMIT="/path/to/crucible/viewer/emit.js"
+```
+
+Now run `/crucible` as normal — events stream to the browser automatically. If `CRUCIBLE_EMIT` is not set the debate runs exactly as before; the viewer is fully opt-in.
+
+### What you see
+
+| Element | Meaning |
+|---------|---------|
+| Agent card border glow | Agent is currently active |
+| Animated arrow X → Y | X is attacking Y right now |
+| HP bar dropping | Agent absorbing a critique |
+| HP bar recovering | Agent successfully defended |
+| CONVERGED / DIVERGED overlay | Convergence check result |
+| ⚖️ Arbiter card appears | Final arbitration in progress |
+
+---
+
 ## License
 
 MIT

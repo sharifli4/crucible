@@ -33,9 +33,20 @@ Assign `AGENTS = [first NUMBER_OF_AGENTS names from the pool]`. Examples:
 
 All subsequent steps use `TASK` as the task and `AGENTS` as the list of agent names.
 
+**Viewer — emit `debate_started` (only if `CRUCIBLE_EMIT` env var is set):**
+```bash
+node "$CRUCIBLE_EMIT" debate_started '{"task":"[TASK]","agents":["Alpha","Beta",...fill in real names...],"numAgents":[NUMBER_OF_AGENTS]}' || true
+```
+Replace the agents array and numAgents with the actual values from SETUP.
+
 ---
 
 ## ROUND 1 — Independent Proposals
+
+**Viewer — emit `phase_started` (if `CRUCIBLE_EMIT` set):**
+```bash
+node "$CRUCIBLE_EMIT" phase_started '{"phase":"proposals","label":"Round 1 — Opening Proposals","round":1}' || true
+```
 
 Tell the user:
 ```
@@ -63,6 +74,10 @@ Propose your complete solution independently. Do not hold back — this is your 
 
 Collect each result as `[AGENT_X_R1]` (e.g., `[AGENT_ALPHA_R1]`, `[AGENT_BETA_R1]`, etc.).
 
+**Viewer — after each proposal (if `CRUCIBLE_EMIT` set):** for each agent X:
+1. Use the Write tool to write `[AGENT_X_R1]` to `/tmp/crucible_[X]_proposal.txt`
+2. Run: `node "$CRUCIBLE_EMIT" proposal '{"agent":"[X]","round":1}' /tmp/crucible_[X]_proposal.txt || true`
+
 Immediately show the user each agent's opening position:
 ```
 #### Agent [X]'s Opening Position
@@ -76,6 +91,11 @@ Immediately show the user each agent's opening position:
 ---
 
 ## ROUND 2 — Cross-Attack
+
+**Viewer — emit `phase_started` (if `CRUCIBLE_EMIT` set):**
+```bash
+node "$CRUCIBLE_EMIT" phase_started '{"phase":"critiques","label":"Round 2 — Cross-Attack","round":2}' || true
+```
 
 Tell the user:
 ```
@@ -102,6 +122,10 @@ Directly attack [Y]'s solution. Find every flaw. Show why your approach is stron
 
 Collect each result as `[AGENT_X_ATTACKS_AGENT_Y_R2]` (e.g., `[AGENT_ALPHA_ATTACKS_AGENT_BETA_R2]`).
 
+**Viewer — after each critique (if `CRUCIBLE_EMIT` set):** for each pair (X,Y):
+1. Write `[AGENT_X_ATTACKS_AGENT_Y_R2]` to `/tmp/crucible_[X]_[Y]_crit.txt`
+2. Run: `node "$CRUCIBLE_EMIT" critique '{"attacker":"[X]","target":"[Y]","round":2}' /tmp/crucible_[X]_[Y]_crit.txt || true`
+
 Immediately show the user each critique:
 ```
 #### [X] attacks [Y]
@@ -115,6 +139,11 @@ Immediately show the user each critique:
 ---
 
 ## ROUND 2 — Defense & Refinement
+
+**Viewer — emit `phase_started` (if `CRUCIBLE_EMIT` set):**
+```bash
+node "$CRUCIBLE_EMIT" phase_started '{"phase":"defenses","label":"Round 2 — Defense","round":2}' || true
+```
 
 Tell the user:
 ```
@@ -146,6 +175,10 @@ Defend your position against all attacks above. Concede valid points and fix the
 ```
 
 Collect each result as `[AGENT_X_R2]`.
+
+**Viewer — after each defense (if `CRUCIBLE_EMIT` set):** for each agent X:
+1. Write `[AGENT_X_R2]` to `/tmp/crucible_[X]_defense.txt`
+2. Run: `node "$CRUCIBLE_EMIT" defense '{"agent":"[X]","round":2}' /tmp/crucible_[X]_defense.txt || true`
 
 Immediately show the user each defense:
 ```
@@ -186,6 +219,10 @@ Then in 2-3 sentences, explain what the remaining core disagreements are (if DIV
 
 Collect result as `[CONVERGENCE]`.
 
+**Viewer — emit convergence (if `CRUCIBLE_EMIT` set):**
+1. Write `[CONVERGENCE]` to `/tmp/crucible_convergence.txt`
+2. Run: `node "$CRUCIBLE_EMIT" convergence '{"result":"[first word of CONVERGENCE — CONVERGED or DIVERGED]"}' /tmp/crucible_convergence.txt || true`
+
 Immediately show the user:
 ```
 #### Convergence Result
@@ -201,6 +238,11 @@ Immediately show the user:
 ---
 
 ## ROUND 3 — Second Cross-Attack
+
+**Viewer — emit `phase_started` (if `CRUCIBLE_EMIT` set):**
+```bash
+node "$CRUCIBLE_EMIT" phase_started '{"phase":"critiques","label":"Round 3 — Cross-Attack","round":3}' || true
+```
 
 Tell the user:
 ```
@@ -227,6 +269,10 @@ Opponent ([Y]) refined solution to critique:
 
 Collect each result as `[AGENT_X_ATTACKS_AGENT_Y_R3]`.
 
+**Viewer — after each critique (if `CRUCIBLE_EMIT` set):** for each pair (X,Y):
+1. Write `[AGENT_X_ATTACKS_AGENT_Y_R3]` to `/tmp/crucible_[X]_[Y]_crit3.txt`
+2. Run: `node "$CRUCIBLE_EMIT" critique '{"attacker":"[X]","target":"[Y]","round":3}' /tmp/crucible_[X]_[Y]_crit3.txt || true`
+
 Immediately show the user each critique:
 ```
 #### [X] attacks [Y] (Round 3)
@@ -240,6 +286,11 @@ Immediately show the user each critique:
 ---
 
 ## ROUND 3 — Final Defense & Refinement
+
+**Viewer — emit `phase_started` (if `CRUCIBLE_EMIT` set):**
+```bash
+node "$CRUCIBLE_EMIT" phase_started '{"phase":"defenses","label":"Round 3 — Final Defense","round":3}' || true
+```
 
 Tell the user:
 ```
@@ -267,6 +318,10 @@ This is your final round. Give your definitive, fully-refined position. Concede 
 
 Collect each result as `[AGENT_X_R3]`.
 
+**Viewer — after each defense (if `CRUCIBLE_EMIT` set):** for each agent X:
+1. Write `[AGENT_X_R3]` to `/tmp/crucible_[X]_defense3.txt`
+2. Run: `node "$CRUCIBLE_EMIT" defense '{"agent":"[X]","round":3}' /tmp/crucible_[X]_defense3.txt || true`
+
 Immediately show the user each final position:
 ```
 #### [X]'s Final Position
@@ -280,6 +335,11 @@ Immediately show the user each final position:
 ---
 
 ## FINAL ARBITRATION
+
+**Viewer — emit `phase_started` (if `CRUCIBLE_EMIT` set):**
+```bash
+node "$CRUCIBLE_EMIT" phase_started '{"phase":"arbitration","label":"Final Arbitration"}' || true
+```
 
 Tell the user:
 ```
@@ -332,6 +392,10 @@ Agent [X] (Round 1):
 
 Read the complete debate transcript above. Score all [NUMBER_OF_AGENTS] agents. Synthesize the definitive final answer.
 ```
+
+**Viewer — after arbiter output (if `CRUCIBLE_EMIT` set):**
+1. Write the arbiter's full output to `/tmp/crucible_final.txt`
+2. Run: `node "$CRUCIBLE_EMIT" final_answer '{}' /tmp/crucible_final.txt || true`
 
 Show the arbiter's full output to the user immediately under:
 ```
