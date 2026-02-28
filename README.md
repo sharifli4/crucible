@@ -112,10 +112,10 @@ You should see `crucible` listed under available commands. If it appears, the pl
 Run `/crucible` followed by any task, question, or problem you want stress-tested:
 
 ```bash
-/crucible [--agents N] <your task here>
+/crucible [--agents N] [--model sonnet|opus] <your task here>
 ```
 
-The `--agents` flag is optional. If omitted, two agents (Alpha and Beta) run by default — identical to previous behaviour.
+Both flags are optional. Defaults: 2 agents, sonnet model.
 
 ### `--agents N`
 
@@ -124,6 +124,17 @@ Set how many debater agents participate. N can be 2, 3, 4, or 5.
 ```bash
 /crucible --agents 3 design a rate limiter
 ```
+
+### `--model sonnet|opus`
+
+Set the model used for debater agents. Defaults to `sonnet`. Use `opus` for tasks that require deeper reasoning — the adversarial structure compensates for most of Sonnet's gaps, but complex problems benefit from stronger individual proposals.
+
+```bash
+/crucible --model opus design a distributed consensus algorithm
+/crucible --agents 3 --model opus should we use CRDTs or OT for collaborative editing?
+```
+
+The arbiter always uses Opus regardless of this flag.
 
 Agent names are assigned in order from the pool: **Alpha, Beta, Gamma, Delta, Epsilon**.
 
@@ -176,6 +187,7 @@ The debate streams to your screen in real time as each phase completes. You do n
 ## Crucible started
 Task: implement a thread-safe LRU cache in Python
 Agents: Alpha, Beta (2 agents)
+Debater model: sonnet
 
 ### Round 1 — Opening Proposals
 Alpha, Beta are independently forming their positions...
@@ -227,14 +239,14 @@ DIVERGED — core disagreement on lock strategy remains.
 
 ## Agents
 
-| Agent | Model | Role |
-|-------|-------|------|
-| `debater` | Claude Sonnet | Proposes solutions, attacks every opponent, defends its own position |
+| Agent | Default Model | Role |
+|-------|---------------|------|
+| `debater` | Claude Sonnet (configurable via `--model`) | Proposes solutions, attacks every opponent, defends its own position |
 | `arbiter` | Claude Opus | Reads the full debate transcript, scores all agents, synthesizes the final answer |
 
-The same `debater` agent plays all three roles — propose, critique, defend — across all rounds. It switches behavior based on the mode it receives in each prompt. All N debaters use the same agent type, which eliminates bias toward any particular role or position.
+The same `debater` agent plays all three roles — propose, critique, defend — across all rounds. It switches behavior based on the mode it receives in each prompt. All N debaters use the same agent type, which eliminates bias toward any particular role or position. The debater model can be set to `opus` with `--model opus` for tasks that need stronger individual reasoning.
 
-The `arbiter` uses Claude Opus, the most capable model, because it has the hardest job: reading the entire debate, judging every position fairly, and producing an answer that is stronger than any individual agent's final position.
+The `arbiter` always uses Claude Opus, the most capable model, because it has the hardest job: reading the entire debate, judging every position fairly, and producing an answer that is stronger than any individual agent's final position.
 
 ---
 
@@ -264,75 +276,6 @@ crucible/
 │   └── arbiter.md         # Arbiter agent (final verdict + synthesis)
 └── README.md
 ```
-
----
-
-## Live Viewer (optional)
-
-The Viewer is a real-time game-like UI that shows the debate as it unfolds — agents as player cards arranged in an arena, animated attack arrows flying between them, HP bars that drain on valid hits, and a live speech panel showing each agent's current statement.
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  ⚔ CRUCIBLE  ·  Round 2 — Cross-Attack                 │
-│  Task: design a rate limiter                            │
-├────────────────────────────────┬────────────────────────┤
-│                                │ Alpha → Beta  ATTACK   │
-│      🔵 ALPHA                  │ [FATAL] Your token      │
-│      ⚡ ATTACKING               │ bucket has a race       │
-│      ████████░░                │ condition on the        │
-│        ↘                       │ refill thread…          │
-│         [  ARENA  ]            ├────────────────────────┤
-│        ↗                       │ LOG                     │
-│      🔴 BETA                   │ ATTACK  Alpha→Beta      │
-│      🛡 DEFENDING               │ DEFEND  Beta (R2)       │
-│      ██████░░░░                │ PHASE   Round 3         │
-└────────────────────────────────┴────────────────────────┘
-```
-
-### Setup
-
-**1. Install dependencies and start the server**
-
-```bash
-cd crucible/viewer
-npm install
-node server.js
-```
-
-Open `http://localhost:3141` in your browser.
-
-**2. Register the hook** (one-time, enables automatic streaming)
-
-Add to `~/.claude/settings.json` — replace the path with your actual clone location:
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [{
-      "matcher": "Agent",
-      "hooks": [{
-        "type": "command",
-        "command": "node /path/to/crucible/viewer/hook.js"
-      }]
-    }]
-  }
-}
-```
-
-The hook fires automatically after every Agent tool call. It detects crucible debater and arbiter results, parses the agent name/mode/round from the prompt, and streams the content directly to the server — no temp files, no emit commands inside the debate.
-
-**3. Run `/crucible` as normal.** Everything streams via the hook automatically — no bash commands inside the debate, no temp files, no permission prompts.
-
-### What you see
-
-| Element | Meaning |
-|---------|---------|
-| Agent card border glow | Agent is currently active |
-| Animated arrow X → Y | X is attacking Y right now |
-| HP bar dropping | Agent absorbing a critique |
-| HP bar recovering | Agent successfully defended |
-| CONVERGED / DIVERGED overlay | Convergence check result |
-| ⚖️ Arbiter card appears | Final arbitration in progress |
 
 ---
 

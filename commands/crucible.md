@@ -1,6 +1,6 @@
 ---
 description: Run N debater agents (2–5) that propose, attack each other, and defend their positions across multiple rounds until they converge on the best answer
-argument-hint: [--agents N] <task description>
+argument-hint: [--agents N] [--model sonnet|opus] <task description>
 allowed-tools: [Agent, Read, Write, Bash]
 ---
 
@@ -16,12 +16,12 @@ Show the user what is happening at every step. Do not wait until the end to reve
 
 Arguments received: `$ARGUMENTS`
 
-1. **If** `$ARGUMENTS` starts with `--agents N` (where N is an integer 2–5):
-   - Set `NUMBER_OF_AGENTS = N`
-   - Set `TASK = $ARGUMENTS` with the leading `--agents N` stripped and trimmed
-2. **Otherwise:**
-   - Set `NUMBER_OF_AGENTS = 2`
-   - Set `TASK = $ARGUMENTS`
+1. Extract optional flags from `$ARGUMENTS`:
+   - **If** `--agents N` is present (where N is an integer 2–5): set `NUMBER_OF_AGENTS = N` and remove it from the arguments
+   - **Otherwise:** set `NUMBER_OF_AGENTS = 2`
+   - **If** `--model MODEL` is present (where MODEL is `sonnet` or `opus`): set `DEBATER_MODEL = MODEL` and remove it from the arguments
+   - **Otherwise:** set `DEBATER_MODEL = sonnet`
+2. Set `TASK` = remaining arguments after all flags are stripped and trimmed
 
 Agent name pool (in order): **Alpha, Beta, Gamma, Delta, Epsilon**
 
@@ -43,6 +43,7 @@ Tell the user:
 
 **Task:** [TASK]
 **Agents:** [AGENTS joined by ", "] ([NUMBER_OF_AGENTS] agents)
+**Debater model:** [DEBATER_MODEL]
 
 ---
 
@@ -50,7 +51,7 @@ Tell the user:
 [AGENTS joined by ", "] are independently forming their positions...
 ```
 
-Launch **all agents in parallel** using the `crucible:debater` agent. For **each agent X** in AGENTS:
+Launch **all agents in parallel** using the `crucible:debater` agent with `model = DEBATER_MODEL`. For **each agent X** in AGENTS:
 
 **Prompt:**
 ```
@@ -83,7 +84,7 @@ Tell the user:
 Every agent is attacking every other agent's solution. Running [NUMBER_OF_AGENTS * (NUMBER_OF_AGENTS - 1)] critiques in parallel...
 ```
 
-Launch **all critiques in parallel** using the `crucible:debater` agent. For every **ordered pair (X, Y)** where X ≠ Y in AGENTS (full round-robin):
+Launch **all critiques in parallel** using the `crucible:debater` agent with `model = DEBATER_MODEL`. For every **ordered pair (X, Y)** where X ≠ Y in AGENTS (full round-robin):
 
 **Prompt for X attacking Y:**
 ```
@@ -122,7 +123,7 @@ Tell the user:
 Each agent is now responding to all attacks and refining their position...
 ```
 
-Launch **all defenses in parallel** using the `crucible:debater` agent. For **each agent X** in AGENTS:
+Launch **all defenses in parallel** using the `crucible:debater` agent with `model = DEBATER_MODEL`. For **each agent X** in AGENTS:
 
 Build a **critique block** for X by collecting all `[AGENT_Y_ATTACKS_AGENT_X_R2]` for every Y ≠ X, formatted as:
 ```
@@ -208,7 +209,7 @@ Tell the user:
 Every agent is attacking every other agent's refined positions. Running [NUMBER_OF_AGENTS * (NUMBER_OF_AGENTS - 1)] critiques in parallel...
 ```
 
-Launch **all critiques in parallel** using the `crucible:debater` agent. For every **ordered pair (X, Y)** where X ≠ Y in AGENTS:
+Launch **all critiques in parallel** using the `crucible:debater` agent with `model = DEBATER_MODEL`. For every **ordered pair (X, Y)** where X ≠ Y in AGENTS:
 
 **Prompt for X attacking Y:**
 ```
@@ -247,7 +248,7 @@ Tell the user:
 Each agent is delivering their final position...
 ```
 
-Launch **all defenses in parallel** using the `crucible:debater` agent. For **each agent X** in AGENTS:
+Launch **all defenses in parallel** using the `crucible:debater` agent with `model = DEBATER_MODEL`. For **each agent X** in AGENTS:
 
 Build a **critique block** for X from Round 3: collect all `[AGENT_Y_ATTACKS_AGENT_X_R3]` for every Y ≠ X.
 
