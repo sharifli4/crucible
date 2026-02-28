@@ -73,10 +73,19 @@ wss.on('connection', ws => {
   ws.on('error', () => clients.delete(ws));
 });
 
+const EMIT_PATH = path.join(DIR, 'emit.js');
+const LOCK_FILE = '/tmp/crucible_emit_path';
+
 server.listen(PORT, () => {
-  console.log(`\nCrucible Viewer →  http://localhost:${PORT}\n`);
-  console.log('1. Open that URL in your browser');
-  console.log('2. Export your emit path:');
-  console.log(`   export CRUCIBLE_EMIT="${path.join(DIR, 'emit.js')}"`);
-  console.log('3. Run /crucible in Claude Code\n');
+  // Write emit path to a well-known file so crucible.md needs no env var
+  fs.writeFileSync(LOCK_FILE, EMIT_PATH, 'utf8');
+
+  console.log(`\nCrucible Viewer →  http://localhost:${PORT}`);
+  console.log(`Emit path written to ${LOCK_FILE}`);
+  console.log('Open the URL in your browser, then run /crucible\n');
 });
+
+// Clean up lock file on exit
+process.on('exit',    () => { try { fs.unlinkSync(LOCK_FILE); } catch {} });
+process.on('SIGINT',  () => process.exit(0));
+process.on('SIGTERM', () => process.exit(0));

@@ -297,13 +297,9 @@ npm install
 node server.js
 ```
 
-The server prints the URL and the export command you need. Open the URL in your browser, then in your shell:
+Open `http://localhost:3141` in your browser, then run `/crucible` as normal. That's it — no environment variables, no restart required.
 
-```bash
-export CRUCIBLE_EMIT="/path/to/crucible/viewer/emit.js"
-```
-
-Now run `/crucible` as normal — events stream to the browser automatically. If `CRUCIBLE_EMIT` is not set the debate runs exactly as before; the viewer is fully opt-in.
+When the server starts it writes its emit path to `/tmp/crucible_emit_path`. The debate detects this file automatically and streams events to the browser. When the server stops the file is removed and the debate runs exactly as before; the viewer is fully opt-in.
 
 ### What you see
 
