@@ -29,50 +29,133 @@ Round 3   Alpha attacks Beta's refined position│
 
 Each step is shown to the user in real time as the debate unfolds.
 
+---
+
 ## Installation
 
-**Load for a single session:**
+### Requirements
+
+- [Claude Code](https://claude.ai/code) installed and configured
+- A valid Anthropic API key set up in Claude Code
+
+### Step 1 — Clone the repository
+
+```bash
+git clone git@github.com:sharifli4/crucible.git
+```
+
+Or with HTTPS if you don't have SSH configured:
+
+```bash
+git clone https://github.com/sharifli4/crucible.git
+```
+
+This creates a `crucible/` directory on your machine containing the plugin files.
+
+### Step 2 — Choose how to load it
+
+There are two ways to use the plugin. Pick the one that suits you.
+
+---
+
+#### Option A — Load for a single session (quickest way to try it)
+
+Pass the plugin directory when starting Claude Code:
+
 ```bash
 claude --plugin-dir /path/to/crucible
 ```
 
-**Install permanently** — add to `~/.claude/settings.json`:
+Replace `/path/to/crucible` with the actual path where you cloned the repo. For example:
+
+```bash
+claude --plugin-dir ~/projects/crucible
+```
+
+The `/crucible` command will be available for the duration of that session only. When you close the session, the plugin is no longer loaded.
+
+---
+
+#### Option B — Install permanently (recommended)
+
+To have Crucible available in every Claude Code session without passing a flag each time, add it to your Claude settings file.
+
+Open `~/.claude/settings.json` in any text editor. If the file does not exist yet, create it. Add the `pluginDirectories` field with the path to your cloned repo:
+
 ```json
 {
   "pluginDirectories": ["/path/to/crucible"]
 }
 ```
 
-Then `/crucible` is available in every session without any flags.
+If you already have other settings in the file, just add the `pluginDirectories` line alongside them:
+
+```json
+{
+  "model": "sonnet",
+  "pluginDirectories": ["/path/to/crucible"]
+}
+```
+
+Save the file. From now on, every time you start Claude Code, the `/crucible` command will be available automatically — no flags needed.
+
+### Step 3 — Verify installation
+
+Start Claude Code and run:
+
+```bash
+/help
+```
+
+You should see `crucible` listed under available commands. If it appears, the plugin loaded correctly and you are ready to use it.
+
+---
 
 ## Usage
 
+Run `/crucible` followed by any task, question, or problem you want stress-tested:
+
 ```bash
-/crucible <task>
+/crucible <your task here>
 ```
 
-**Examples:**
+There are no other options or flags — just describe what you want solved and the debate begins automatically.
+
+### What kinds of tasks work best
+
+Crucible is most valuable when a wrong answer would be costly and you want more than one perspective before trusting the result. It works for:
+
+- **Algorithm and data structure problems** — two agents will often pick different implementations, exposing trade-offs you might not have considered
+- **Architecture and design decisions** — forces both sides of a trade-off to be argued rigorously before a conclusion is drawn
+- **Technical explanations** — if an explanation survives being attacked by another agent, you can trust it is accurate
+- **System design** — surfaces edge cases and failure modes that a single agent would miss
+- **Any decision where you want a second opinion that genuinely disagrees rather than rubber-stamps**
+
+### Examples
 
 ```bash
-# Algorithms & data structures
+# Data structures
 /crucible implement a thread-safe LRU cache in Python
 
-# Architecture decisions
+# Architecture
 /crucible should we use event sourcing or traditional CRUD for a high-write orders system?
 
-# Trade-off analysis
+# Authentication
 /crucible compare JWT vs session-based authentication for a mobile app backend
 
 # System design
 /crucible design a rate limiter that supports sliding window and token bucket strategies
 
-# Explanations
+# Distributed systems
 /crucible explain why consistent hashing is used in distributed caches
+
+# Language choice
+/crucible should I write this CLI tool in Go or Rust?
 ```
 
-## What You See
+### What you will see
 
-The debate streams to your screen as it happens:
+The debate streams to your screen in real time as each phase completes. You do not wait until the end — you watch the argument unfold:
 
 ```
 ## Crucible started
@@ -123,6 +206,8 @@ DIVERGED — core disagreement on lock strategy remains.
 **Confidence:** HIGH
 ```
 
+---
+
 ## Agents
 
 | Agent | Model | Role |
@@ -130,17 +215,23 @@ DIVERGED — core disagreement on lock strategy remains.
 | `debater` | Claude Sonnet | Proposes solutions, attacks the opponent, defends its own position |
 | `arbiter` | Claude Opus | Reads the full debate transcript, scores both agents, synthesizes the final answer |
 
-The same `debater` agent plays all three roles — propose, critique, defend — across all rounds. It switches behavior based on the mode it receives in each prompt.
+The same `debater` agent plays all three roles — propose, critique, defend — across all rounds. It switches behavior based on the mode it receives in each prompt. This means Alpha and Beta are not separate specialists — the same agent type argues both sides, which eliminates bias toward one role over another.
+
+The `arbiter` uses Claude Opus, the most capable model, because it has the hardest job: reading the entire debate, judging each position fairly, and producing an answer that is stronger than either agent's final position.
+
+---
 
 ## Why It Works
 
-A single AI asked a question will produce a confident answer whether it is right or wrong. Crucible forces that answer through adversarial pressure:
+A single AI asked a question will produce a confident answer whether it is right or wrong. There is no internal pressure to find its own mistakes. Crucible changes this by introducing a second agent whose job is specifically to find those mistakes.
 
-- **Blind spots surface** when two agents approach the same problem differently
-- **Errors get caught** when the opponent attacks a specific argument rather than giving generic feedback
-- **Positions improve** across rounds as agents concede valid points and fix real flaws
-- **Convergence is meaningful** — when two adversarial agents agree, that agreement is earned, not assumed
-- **The arbiter goes further** — it synthesizes an answer stronger than either agent's final position
+- **Blind spots surface** when two agents approach the same problem differently and attack each other's assumptions
+- **Errors get caught** when the opponent targets a specific argument rather than giving generic feedback
+- **Positions improve each round** as agents are forced to concede valid points and fix real flaws
+- **Convergence is meaningful** — when two adversarial agents agree, that agreement is earned through argument, not assumed from the start
+- **The arbiter goes further** — it does not just pick a winner but synthesizes an answer stronger than either agent's final position by combining the best elements of both
+
+---
 
 ## Plugin Structure
 
@@ -149,12 +240,14 @@ crucible/
 ├── .claude-plugin/
 │   └── plugin.json        # Plugin metadata
 ├── commands/
-│   └── crucible.md        # /crucible slash command
+│   └── crucible.md        # /crucible slash command — orchestrates the full debate
 ├── agents/
-│   ├── debater.md         # Debater agent (propose / critique / defend)
+│   ├── debater.md         # Debater agent (propose / critique / defend modes)
 │   └── arbiter.md         # Arbiter agent (final verdict + synthesis)
 └── README.md
 ```
+
+---
 
 ## License
 
