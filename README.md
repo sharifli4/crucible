@@ -1,30 +1,26 @@
 # Crucible
 
-A Claude Code plugin that runs two AI agents against each other — they independently propose solutions, directly attack each other's arguments, and defend their own positions across multiple debate rounds until they converge on the most correct answer.
+A Claude Code plugin that runs multiple AI agents against each other — they independently propose solutions, directly attack every other agent's arguments, and defend their own positions across multiple debate rounds until they converge on the most correct answer. Run 2–5 agents depending on how much cross-critique coverage you want.
 
 ## How It Works
 
 Raw answers go in. Adversarial pressure is applied. Refined answers come out.
 
 ```
-Round 1   Alpha proposes ──────────────── Beta proposes
-               │                               │
-Round 2   Alpha attacks Beta's solution        │
-               │         Beta attacks Alpha's solution
-               │                               │
-          Alpha defends + refines         Beta defends + refines
-               │                               │
-          [Convergence check — stop early if they agree]
-               │                               │
-Round 3   Alpha attacks Beta's refined position│
-               │         Beta attacks Alpha's refined position
-               │                               │
-          Alpha's final position          Beta's final position
-               │                               │
-               └──────────── Arbiter ──────────┘
-                      Reads full transcript
-                      Scores both agents
-                      Synthesizes final answer
+Round 1   Agent 1 proposes ─── Agent 2 proposes ─── … Agent N proposes
+                │                     │                      │
+Round 2   Every agent attacks every other agent (N×(N-1) critiques in parallel)
+                │                     │                      │
+          Every agent defends against all attacks directed at it
+                │                     │                      │
+          [Convergence check — stop early if all N agents agree]
+                │                     │                      │
+Round 3   Same cross-attack and defense structure (if still diverged)
+                │                     │                      │
+                └──────────────── Arbiter ──────────────────┘
+                           Reads full transcript
+                           Scores all N agents
+                           Synthesizes final answer
 ```
 
 Each step is shown to the user in real time as the debate unfolds.
@@ -116,10 +112,29 @@ You should see `crucible` listed under available commands. If it appears, the pl
 Run `/crucible` followed by any task, question, or problem you want stress-tested:
 
 ```bash
-/crucible <your task here>
+/crucible [--agents N] <your task here>
 ```
 
-There are no other options or flags — just describe what you want solved and the debate begins automatically.
+The `--agents` flag is optional. If omitted, two agents (Alpha and Beta) run by default — identical to previous behaviour.
+
+### `--agents N`
+
+Set how many debater agents participate. N can be 2, 3, 4, or 5.
+
+```bash
+/crucible --agents 3 design a rate limiter
+```
+
+Agent names are assigned in order from the pool: **Alpha, Beta, Gamma, Delta, Epsilon**.
+
+| N | Agents | Critiques per round |
+|---|--------|---------------------|
+| 2 | Alpha, Beta | 2 |
+| 3 | Alpha, Beta, Gamma | 6 |
+| 4 | Alpha, Beta, Gamma, Delta | 12 |
+| 5 | Alpha, Beta, Gamma, Delta, Epsilon | 20 |
+
+More agents means broader cross-critique coverage but more API calls. Start with 2 (the default) and increase when you want additional perspectives on a high-stakes problem.
 
 ### What kinds of tasks work best
 
@@ -134,17 +149,17 @@ Crucible is most valuable when a wrong answer would be costly and you want more 
 ### Examples
 
 ```bash
-# Data structures
+# Default (2 agents)
 /crucible implement a thread-safe LRU cache in Python
 
-# Architecture
-/crucible should we use event sourcing or traditional CRUD for a high-write orders system?
+# 3 agents for broader coverage
+/crucible --agents 3 should we use event sourcing or traditional CRUD for a high-write orders system?
 
 # Authentication
 /crucible compare JWT vs session-based authentication for a mobile app backend
 
-# System design
-/crucible design a rate limiter that supports sliding window and token bucket strategies
+# System design with extra scrutiny
+/crucible --agents 4 design a rate limiter that supports sliding window and token bucket strategies
 
 # Distributed systems
 /crucible explain why consistent hashing is used in distributed caches
@@ -160,9 +175,10 @@ The debate streams to your screen in real time as each phase completes. You do n
 ```
 ## Crucible started
 Task: implement a thread-safe LRU cache in Python
+Agents: Alpha, Beta (2 agents)
 
 ### Round 1 — Opening Proposals
-Alpha and Beta are independently forming their positions...
+Alpha, Beta are independently forming their positions...
 
 #### Agent Alpha's Opening Position
 I'll use OrderedDict with threading.Lock for O(1) get/put...
@@ -171,6 +187,7 @@ I'll use OrderedDict with threading.Lock for O(1) get/put...
 I'll use a doubly-linked list + hashmap to avoid Python GIL limitations...
 
 ### Round 2 — Cross-Attack
+Running 2 critiques in parallel...
 #### Alpha attacks Beta
 [FATAL] Your linked list has a race condition on concurrent eviction...
 [MAJOR] The complexity is unnecessary — OrderedDict already handles ordering...
@@ -212,12 +229,12 @@ DIVERGED — core disagreement on lock strategy remains.
 
 | Agent | Model | Role |
 |-------|-------|------|
-| `debater` | Claude Sonnet | Proposes solutions, attacks the opponent, defends its own position |
-| `arbiter` | Claude Opus | Reads the full debate transcript, scores both agents, synthesizes the final answer |
+| `debater` | Claude Sonnet | Proposes solutions, attacks every opponent, defends its own position |
+| `arbiter` | Claude Opus | Reads the full debate transcript, scores all agents, synthesizes the final answer |
 
-The same `debater` agent plays all three roles — propose, critique, defend — across all rounds. It switches behavior based on the mode it receives in each prompt. This means Alpha and Beta are not separate specialists — the same agent type argues both sides, which eliminates bias toward one role over another.
+The same `debater` agent plays all three roles — propose, critique, defend — across all rounds. It switches behavior based on the mode it receives in each prompt. All N debaters use the same agent type, which eliminates bias toward any particular role or position.
 
-The `arbiter` uses Claude Opus, the most capable model, because it has the hardest job: reading the entire debate, judging each position fairly, and producing an answer that is stronger than either agent's final position.
+The `arbiter` uses Claude Opus, the most capable model, because it has the hardest job: reading the entire debate, judging every position fairly, and producing an answer that is stronger than any individual agent's final position.
 
 ---
 
@@ -228,8 +245,9 @@ A single AI asked a question will produce a confident answer whether it is right
 - **Blind spots surface** when two agents approach the same problem differently and attack each other's assumptions
 - **Errors get caught** when the opponent targets a specific argument rather than giving generic feedback
 - **Positions improve each round** as agents are forced to concede valid points and fix real flaws
-- **Convergence is meaningful** — when two adversarial agents agree, that agreement is earned through argument, not assumed from the start
-- **The arbiter goes further** — it does not just pick a winner but synthesizes an answer stronger than either agent's final position by combining the best elements of both
+- **Convergence is meaningful** — when adversarial agents agree, that agreement is earned through argument, not assumed from the start
+- **More agents, more coverage** — running 3–5 agents surfaces blind spots that a two-agent debate might miss, at the cost of more API calls
+- **The arbiter goes further** — it does not just pick a winner but synthesizes an answer stronger than any agent's final position by combining the best elements of all
 
 ---
 
