@@ -73,19 +73,21 @@ wss.on('connection', ws => {
   ws.on('error', () => clients.delete(ws));
 });
 
-const EMIT_PATH = path.join(DIR, 'emit.js');
-const LOCK_FILE = '/tmp/crucible_emit_path';
+const EMIT_PATH   = path.join(DIR, 'emit.js');
+const EMIT_SHIM   = '/tmp/crucible_emit'; // executable shim — no $() needed in crucible.md
 
 server.listen(PORT, () => {
-  // Write emit path to a well-known file so crucible.md needs no env var
-  fs.writeFileSync(LOCK_FILE, EMIT_PATH, 'utf8');
+  // Write a tiny executable shell script so crucible.md can call it directly
+  // without any $() command substitution (which triggers permission prompts).
+  const shim = `#!/bin/sh\nnode '${EMIT_PATH}' "$@"\n`;
+  fs.writeFileSync(EMIT_SHIM, shim, { mode: 0o755 });
 
   console.log(`\nCrucible Viewer →  http://localhost:${PORT}`);
-  console.log(`Emit path written to ${LOCK_FILE}`);
+  console.log(`Emit shim written to ${EMIT_SHIM}`);
   console.log('Open the URL in your browser, then run /crucible\n');
 });
 
-// Clean up lock file on exit
-process.on('exit',    () => { try { fs.unlinkSync(LOCK_FILE); } catch {} });
+// Remove shim on exit
+process.on('exit',    () => { try { fs.unlinkSync(EMIT_SHIM); } catch {} });
 process.on('SIGINT',  () => process.exit(0));
 process.on('SIGTERM', () => process.exit(0));

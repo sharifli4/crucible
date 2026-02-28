@@ -380,6 +380,36 @@ function handle(evt) {
   }
 }
 
+/* ─── Visual event queue ──────────────────────────────────────────────────── */
+// Proposals, critiques, and defenses are queued so they play one at a time
+// even when a batch of parallel agents all finish simultaneously.
+// Phase transitions and meta-events bypass the queue and fire immediately.
+
+const VISUAL_TYPES = new Set(['proposal', 'critique', 'defense']);
+const VISUAL_GAP_MS = 1100; // gap between consecutive visual events
+
+const visualQueue = [];
+let queueTimer = null;
+
+function enqueue(evt) {
+  visualQueue.push(evt);
+  if (!queueTimer) drainQueue();
+}
+
+function drainQueue() {
+  if (!visualQueue.length) { queueTimer = null; return; }
+  handle(visualQueue.shift());
+  queueTimer = setTimeout(drainQueue, VISUAL_GAP_MS);
+}
+
+function dispatch(evt) {
+  if (VISUAL_TYPES.has(evt.type)) {
+    enqueue(evt);
+  } else {
+    handle(evt);
+  }
+}
+
 /* ─── WebSocket connection ────────────────────────────────────────────────── */
 
 function connect() {
@@ -391,7 +421,7 @@ function connect() {
   };
 
   ws.onmessage = msg => {
-    try { handle(JSON.parse(msg.data)); } catch { /* ignore bad frames */ }
+    try { dispatch(JSON.parse(msg.data)); } catch { /* ignore bad frames */ }
   };
 
   ws.onclose = () => {

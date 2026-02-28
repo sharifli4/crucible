@@ -10,9 +10,9 @@ N debater agents will independently propose solutions, cross-attack every other 
 
 Show the user what is happening at every step. Do not wait until the end to reveal results — surface each phase's output immediately after it completes.
 
-**Viewer:** if the file `/tmp/crucible_emit_path` exists, the Crucible Viewer is running. Emit events by running:
+**Viewer:** if the file `/tmp/crucible_emit` exists, the Crucible Viewer is running. Emit events by running:
 ```bash
-[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" <type> '<json>' [content-file] || true
+[ -f /tmp/crucible_emit ] && /tmp/crucible_emit <type> '<json>' [content-file] || true
 ```
 All viewer emit steps below follow this pattern and are silent no-ops if the viewer is not running.
 
@@ -41,7 +41,7 @@ All subsequent steps use `TASK` as the task and `AGENTS` as the list of agent na
 
 **Viewer — emit `debate_started`:**
 ```bash
-[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" debate_started '{"task":"[TASK]","agents":["Alpha","Beta",...real names...],"numAgents":[NUMBER_OF_AGENTS]}' || true
+[ -f /tmp/crucible_emit ] && /tmp/crucible_emit debate_started '{"task":"[TASK]","agents":["Alpha","Beta",...real names...],"numAgents":[NUMBER_OF_AGENTS]}' || true
 ```
 (substitute actual agent names and count)
 
@@ -51,7 +51,7 @@ All subsequent steps use `TASK` as the task and `AGENTS` as the list of agent na
 
 **Viewer — emit `phase_started`:**
 ```bash
-[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" phase_started '{"phase":"proposals","label":"Round 1 — Opening Proposals","round":1}' || true
+[ -f /tmp/crucible_emit ] && /tmp/crucible_emit phase_started '{"phase":"proposals","label":"Round 1 — Opening Proposals","round":1}' || true
 ```
 
 Tell the user:
@@ -82,7 +82,7 @@ Collect each result as `[AGENT_X_R1]` (e.g., `[AGENT_ALPHA_R1]`, `[AGENT_BETA_R1
 
 **Viewer — after each proposal:** for each agent X:
 1. Use the Write tool to write `[AGENT_X_R1]` to `/tmp/crucible_[X]_r1.txt`
-2. Run: `[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" proposal '{"agent":"[X]","round":1}' /tmp/crucible_[X]_r1.txt || true`
+2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit proposal '{"agent":"[X]","round":1}' /tmp/crucible_[X]_r1.txt || true`
 
 Immediately show the user each agent's opening position:
 ```
@@ -100,7 +100,7 @@ Immediately show the user each agent's opening position:
 
 **Viewer — emit `phase_started`:**
 ```bash
-[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" phase_started '{"phase":"critiques","label":"Round 2 — Cross-Attack","round":2}' || true
+[ -f /tmp/crucible_emit ] && /tmp/crucible_emit phase_started '{"phase":"critiques","label":"Round 2 — Cross-Attack","round":2}' || true
 ```
 
 Tell the user:
@@ -130,7 +130,7 @@ Collect each result as `[AGENT_X_ATTACKS_AGENT_Y_R2]` (e.g., `[AGENT_ALPHA_ATTAC
 
 **Viewer — after each critique:** for each pair (X, Y):
 1. Write `[AGENT_X_ATTACKS_AGENT_Y_R2]` to `/tmp/crucible_[X]_[Y]_c2.txt`
-2. Run: `[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" critique '{"attacker":"[X]","target":"[Y]","round":2}' /tmp/crucible_[X]_[Y]_c2.txt || true`
+2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit critique '{"attacker":"[X]","target":"[Y]","round":2}' /tmp/crucible_[X]_[Y]_c2.txt || true`
 
 Immediately show the user each critique:
 ```
@@ -148,7 +148,7 @@ Immediately show the user each critique:
 
 **Viewer — emit `phase_started`:**
 ```bash
-[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" phase_started '{"phase":"defenses","label":"Round 2 — Defense","round":2}' || true
+[ -f /tmp/crucible_emit ] && /tmp/crucible_emit phase_started '{"phase":"defenses","label":"Round 2 — Defense","round":2}' || true
 ```
 
 Tell the user:
@@ -184,7 +184,7 @@ Collect each result as `[AGENT_X_R2]`.
 
 **Viewer — after each defense:** for each agent X:
 1. Write `[AGENT_X_R2]` to `/tmp/crucible_[X]_d2.txt`
-2. Run: `[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" defense '{"agent":"[X]","round":2}' /tmp/crucible_[X]_d2.txt || true`
+2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit defense '{"agent":"[X]","round":2}' /tmp/crucible_[X]_d2.txt || true`
 
 Immediately show the user each defense:
 ```
@@ -227,7 +227,7 @@ Collect result as `[CONVERGENCE]`.
 
 **Viewer — emit convergence:**
 1. Write `[CONVERGENCE]` to `/tmp/crucible_conv.txt`
-2. Run: `[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" convergence '{"result":"[first word of CONVERGENCE — CONVERGED or DIVERGED]"}' /tmp/crucible_conv.txt || true`
+2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit convergence '{"result":"[first word of CONVERGENCE — CONVERGED or DIVERGED]"}' /tmp/crucible_conv.txt || true`
 
 Immediately show the user:
 ```
@@ -247,7 +247,7 @@ Immediately show the user:
 
 **Viewer — emit `phase_started`:**
 ```bash
-[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" phase_started '{"phase":"critiques","label":"Round 3 — Cross-Attack","round":3}' || true
+[ -f /tmp/crucible_emit ] && /tmp/crucible_emit phase_started '{"phase":"critiques","label":"Round 3 — Cross-Attack","round":3}' || true
 ```
 
 Tell the user:
@@ -277,7 +277,7 @@ Collect each result as `[AGENT_X_ATTACKS_AGENT_Y_R3]`.
 
 **Viewer — after each critique:** for each pair (X, Y):
 1. Write `[AGENT_X_ATTACKS_AGENT_Y_R3]` to `/tmp/crucible_[X]_[Y]_c3.txt`
-2. Run: `[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" critique '{"attacker":"[X]","target":"[Y]","round":3}' /tmp/crucible_[X]_[Y]_c3.txt || true`
+2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit critique '{"attacker":"[X]","target":"[Y]","round":3}' /tmp/crucible_[X]_[Y]_c3.txt || true`
 
 Immediately show the user each critique:
 ```
@@ -295,7 +295,7 @@ Immediately show the user each critique:
 
 **Viewer — emit `phase_started`:**
 ```bash
-[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" phase_started '{"phase":"defenses","label":"Round 3 — Final Defense","round":3}' || true
+[ -f /tmp/crucible_emit ] && /tmp/crucible_emit phase_started '{"phase":"defenses","label":"Round 3 — Final Defense","round":3}' || true
 ```
 
 Tell the user:
@@ -326,7 +326,7 @@ Collect each result as `[AGENT_X_R3]`.
 
 **Viewer — after each defense:** for each agent X:
 1. Write `[AGENT_X_R3]` to `/tmp/crucible_[X]_d3.txt`
-2. Run: `[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" defense '{"agent":"[X]","round":3}' /tmp/crucible_[X]_d3.txt || true`
+2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit defense '{"agent":"[X]","round":3}' /tmp/crucible_[X]_d3.txt || true`
 
 Immediately show the user each final position:
 ```
@@ -344,7 +344,7 @@ Immediately show the user each final position:
 
 **Viewer — emit `phase_started`:**
 ```bash
-[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" phase_started '{"phase":"arbitration","label":"Final Arbitration"}' || true
+[ -f /tmp/crucible_emit ] && /tmp/crucible_emit phase_started '{"phase":"arbitration","label":"Final Arbitration"}' || true
 ```
 
 Tell the user:
@@ -401,7 +401,7 @@ Read the complete debate transcript above. Score all [NUMBER_OF_AGENTS] agents. 
 
 **Viewer — after arbiter output:**
 1. Write the arbiter's full output to `/tmp/crucible_final.txt`
-2. Run: `[ -f /tmp/crucible_emit_path ] && node "$(cat /tmp/crucible_emit_path)" final_answer '{}' /tmp/crucible_final.txt || true`
+2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit final_answer '{}' /tmp/crucible_final.txt || true`
 
 Show the arbiter's full output to the user immediately under:
 ```
