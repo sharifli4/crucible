@@ -36,10 +36,14 @@ Each step is shown to the user in real time as the debate unfolds.
 claude --plugin-dir /path/to/crucible
 ```
 
-**Install permanently:**
-```bash
-/plugin install sharifli4/crucible
+**Install permanently** — add to `~/.claude/settings.json`:
+```json
+{
+  "pluginDirectories": ["/path/to/crucible"]
+}
 ```
+
+Then `/crucible` is available in every session without any flags.
 
 ## Usage
 
