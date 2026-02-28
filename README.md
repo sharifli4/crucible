@@ -321,7 +321,7 @@ Add to `~/.claude/settings.json` — replace the path with your actual clone loc
 
 The hook fires automatically after every Agent tool call. It detects crucible debater and arbiter results, parses the agent name/mode/round from the prompt, and streams the content directly to the server — no temp files, no emit commands inside the debate.
 
-**3. Run `/crucible` as normal.** Phase labels and convergence results stream from lightweight emit calls inside the debate. All content (proposals, attacks, defenses, final verdict) streams via the hook.
+**3. Run `/crucible` as normal.** Everything streams via the hook automatically — no bash commands inside the debate, no temp files, no permission prompts.
 
 ### What you see
 

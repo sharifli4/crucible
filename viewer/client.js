@@ -82,46 +82,31 @@ function repositionCards() {
     card.style.left = pos[i].x + 'px';
     card.style.top  = pos[i].y + 'px';
   });
+  // Keep arbiter centered at top
+  const arb = document.getElementById('arbiter-card');
+  if (arb) {
+    arb.style.left = (arena.clientWidth / 2) + 'px';
+    arb.style.top  = '60px';
+  }
 }
 
 /* ─── Build arena ─────────────────────────────────────────────────────────── */
 
-function initArena(names) {
-  agentNames = names;
+function resetArena() {
+  agentNames = [];
   agentsDiv.innerHTML = '';
   cards = {};
   hp = {};
-  arrowSvg.querySelectorAll('line,path,circle').forEach(e => e.remove());
+  arrowSvg.querySelectorAll('line,path').forEach(e => e.remove());
   convOverlay.className = '';
   convOverlay.innerHTML = '';
+  roundBadge.textContent = 'ARENA';
 
-  const pos = positions(names.length);
-
-  names.forEach((name, i) => {
-    hp[name] = 100;
-    const color = COLORS[name] || '#888';
-
-    const card = document.createElement('div');
-    card.className = 'agent-card';
-    card.id = `card-${name}`;
-    card.style.setProperty('--c', color);
-    card.style.left = pos[i].x + 'px';
-    card.style.top  = pos[i].y + 'px';
-    card.innerHTML = `
-      <div class="agent-avatar">${AVATARS[name] || '⚪'}</div>
-      <div class="agent-name">${name.toUpperCase()}</div>
-      <div class="agent-status" id="st-${name}">${STATUS.idle}</div>
-      <div class="hp-track"><div class="hp-fill" id="hp-${name}" style="width:100%"></div></div>
-    `;
-    agentsDiv.appendChild(card);
-    cards[name] = card;
-  });
-
-  // Arbiter card (hidden until arbitration)
+  // Arbiter card (hidden until arbitration phase)
   const arb = document.createElement('div');
   arb.className = 'arbiter-card';
   arb.id = 'arbiter-card';
-  arb.style.left = (arena.clientWidth  / 2) + 'px';
+  arb.style.left = (arena.clientWidth / 2) + 'px';
   arb.style.top  = '60px';
   arb.innerHTML = `
     <div class="agent-avatar">⚖️</div>
@@ -129,8 +114,39 @@ function initArena(names) {
     <div class="agent-status" id="st-arbiter">STANDING BY</div>
   `;
   agentsDiv.appendChild(arb);
+}
 
-  roundBadge.textContent = 'ARENA';
+// Add a single agent card and reposition all existing cards.
+// Called incrementally as proposals arrive — no need for upfront agent list.
+function addAgent(name) {
+  if (agentNames.includes(name)) return;
+  agentNames.push(name);
+  hp[name] = 100;
+
+  const color = COLORS[name] || '#888';
+  const card = document.createElement('div');
+  card.className = 'agent-card';
+  card.id = `card-${name}`;
+  card.style.setProperty('--c', color);
+  card.innerHTML = `
+    <div class="agent-avatar">${AVATARS[name] || '⚪'}</div>
+    <div class="agent-name">${name.toUpperCase()}</div>
+    <div class="agent-status" id="st-${name}">${STATUS.idle}</div>
+    <div class="hp-track"><div class="hp-fill" id="hp-${name}" style="width:100%"></div></div>
+  `;
+  // Insert before arbiter card so arbiter stays last
+  const arb = document.getElementById('arbiter-card');
+  agentsDiv.insertBefore(card, arb);
+  cards[name] = card;
+
+  // Reposition all cards for new polygon
+  repositionCards();
+}
+
+// Keep for backward compat if debate_started is ever sent
+function initArena(names) {
+  resetArena();
+  names.forEach(addAgent);
 }
 
 /* ─── HP helpers ──────────────────────────────────────────────────────────── */
@@ -266,12 +282,13 @@ function handle(evt) {
   switch (evt.type) {
 
     case 'debate_started': {
+      // Legacy event — hook now handles everything, but keep for replays
       taskLabel.textContent = `Task: ${evt.task}`;
       phaseLabel.textContent = 'Round 1 — Opening Proposals';
-      initArena(evt.agents);
+      resetArena();
+      if (evt.agents) evt.agents.forEach(addAgent);
       setAllStatus('thinking');
-      addLog(`Debate started · ${evt.agents.join(', ')}`, 'START');
-      showSpeech('Crucible', 'START', `Task: ${evt.task}\nAgents: ${evt.agents.join(', ')}`, '#ffd700');
+      addLog(`Debate started · ${(evt.agents || []).join(', ')}`, 'START');
       break;
     }
 
@@ -293,6 +310,17 @@ function handle(evt) {
     }
 
     case 'proposal': {
+      // Auto-initialize: add agent to arena on first appearance
+      if (!agentNames.includes(evt.agent)) {
+        if (agentNames.length === 0) {
+          // Very first agent — treat as new debate
+          resetArena();
+          if (evt.task) taskLabel.textContent = `Task: ${evt.task}`;
+          phaseLabel.textContent = 'Round 1 — Opening Proposals';
+          addLog('New debate started', 'START');
+        }
+        addAgent(evt.agent);
+      }
       setStatus(evt.agent, 'proposing');
       pulseCard(evt.agent, 'pop');
       showSpeech(

@@ -33,20 +33,9 @@ Assign `AGENTS = [first NUMBER_OF_AGENTS names from the pool]`. Examples:
 
 All subsequent steps use `TASK` as the task and `AGENTS` as the list of agent names.
 
-**Viewer — emit `debate_started`:**
-```bash
-[ -f /tmp/crucible_emit ] && /tmp/crucible_emit debate_started '{"task":"[TASK]","agents":["Alpha","Beta",...real names...],"numAgents":[NUMBER_OF_AGENTS]}' || true
-```
-(substitute actual agent names and count)
-
 ---
 
 ## ROUND 1 — Independent Proposals
-
-**Viewer — emit `phase_started`:**
-```bash
-[ -f /tmp/crucible_emit ] && /tmp/crucible_emit phase_started '{"phase":"proposals","label":"Round 1 — Opening Proposals","round":1}' || true
-```
 
 Tell the user:
 ```
@@ -88,11 +77,6 @@ Immediately show the user each agent's opening position:
 
 ## ROUND 2 — Cross-Attack
 
-**Viewer — emit `phase_started`:**
-```bash
-[ -f /tmp/crucible_emit ] && /tmp/crucible_emit phase_started '{"phase":"critiques","label":"Round 2 — Cross-Attack","round":2}' || true
-```
-
 Tell the user:
 ```
 ### Round 2 — Cross-Attack
@@ -131,11 +115,6 @@ Immediately show the user each critique:
 ---
 
 ## ROUND 2 — Defense & Refinement
-
-**Viewer — emit `phase_started`:**
-```bash
-[ -f /tmp/crucible_emit ] && /tmp/crucible_emit phase_started '{"phase":"defenses","label":"Round 2 — Defense","round":2}' || true
-```
 
 Tell the user:
 ```
@@ -207,11 +186,6 @@ Then in 2-3 sentences, explain what the remaining core disagreements are (if DIV
 
 Collect result as `[CONVERGENCE]`.
 
-**Viewer — emit `convergence`:**
-```bash
-[ -f /tmp/crucible_emit ] && /tmp/crucible_emit convergence '{"result":"[first word of CONVERGENCE — CONVERGED or DIVERGED]"}' || true
-```
-
 Immediately show the user:
 ```
 #### Convergence Result
@@ -227,11 +201,6 @@ Immediately show the user:
 ---
 
 ## ROUND 3 — Second Cross-Attack
-
-**Viewer — emit `phase_started`:**
-```bash
-[ -f /tmp/crucible_emit ] && /tmp/crucible_emit phase_started '{"phase":"critiques","label":"Round 3 — Cross-Attack","round":3}' || true
-```
 
 Tell the user:
 ```
@@ -272,11 +241,6 @@ Immediately show the user each critique:
 
 ## ROUND 3 — Final Defense & Refinement
 
-**Viewer — emit `phase_started`:**
-```bash
-[ -f /tmp/crucible_emit ] && /tmp/crucible_emit phase_started '{"phase":"defenses","label":"Round 3 — Final Defense","round":3}' || true
-```
-
 Tell the user:
 ```
 #### Round 3 — Final Defense
@@ -316,11 +280,6 @@ Immediately show the user each final position:
 ---
 
 ## FINAL ARBITRATION
-
-**Viewer — emit `phase_started`:**
-```bash
-[ -f /tmp/crucible_emit ] && /tmp/crucible_emit phase_started '{"phase":"arbitration","label":"Final Arbitration"}' || true
-```
 
 Tell the user:
 ```
