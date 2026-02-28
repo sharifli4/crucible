@@ -291,15 +291,37 @@ The Viewer is a real-time game-like UI that shows the debate as it unfolds — a
 
 ### Setup
 
+**1. Install dependencies and start the server**
+
 ```bash
 cd crucible/viewer
 npm install
 node server.js
 ```
 
-Open `http://localhost:3141` in your browser, then run `/crucible` as normal. That's it — no environment variables, no restart required.
+Open `http://localhost:3141` in your browser.
 
-When the server starts it writes its emit path to `/tmp/crucible_emit_path`. The debate detects this file automatically and streams events to the browser. When the server stops the file is removed and the debate runs exactly as before; the viewer is fully opt-in.
+**2. Register the hook** (one-time, enables automatic streaming)
+
+Add to `~/.claude/settings.json` — replace the path with your actual clone location:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "Agent",
+      "hooks": [{
+        "type": "command",
+        "command": "node /path/to/crucible/viewer/hook.js"
+      }]
+    }]
+  }
+}
+```
+
+The hook fires automatically after every Agent tool call. It detects crucible debater and arbiter results, parses the agent name/mode/round from the prompt, and streams the content directly to the server — no temp files, no emit commands inside the debate.
+
+**3. Run `/crucible` as normal.** Phase labels and convergence results stream from lightweight emit calls inside the debate. All content (proposals, attacks, defenses, final verdict) streams via the hook.
 
 ### What you see
 

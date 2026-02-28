@@ -10,12 +10,6 @@ N debater agents will independently propose solutions, cross-attack every other 
 
 Show the user what is happening at every step. Do not wait until the end to reveal results — surface each phase's output immediately after it completes.
 
-**Viewer:** if the file `/tmp/crucible_emit` exists, the Crucible Viewer is running. Emit events by running:
-```bash
-[ -f /tmp/crucible_emit ] && /tmp/crucible_emit <type> '<json>' [content-file] || true
-```
-All viewer emit steps below follow this pattern and are silent no-ops if the viewer is not running.
-
 ---
 
 ## SETUP — Parse Arguments
@@ -80,10 +74,6 @@ Propose your complete solution independently. Do not hold back — this is your 
 
 Collect each result as `[AGENT_X_R1]` (e.g., `[AGENT_ALPHA_R1]`, `[AGENT_BETA_R1]`, etc.).
 
-**Viewer — after each proposal:** for each agent X:
-1. Use the Write tool to write `[AGENT_X_R1]` to `/tmp/crucible_[X]_r1.txt`
-2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit proposal '{"agent":"[X]","round":1}' /tmp/crucible_[X]_r1.txt || true`
-
 Immediately show the user each agent's opening position:
 ```
 #### Agent [X]'s Opening Position
@@ -127,10 +117,6 @@ Directly attack [Y]'s solution. Find every flaw. Show why your approach is stron
 ```
 
 Collect each result as `[AGENT_X_ATTACKS_AGENT_Y_R2]` (e.g., `[AGENT_ALPHA_ATTACKS_AGENT_BETA_R2]`).
-
-**Viewer — after each critique:** for each pair (X, Y):
-1. Write `[AGENT_X_ATTACKS_AGENT_Y_R2]` to `/tmp/crucible_[X]_[Y]_c2.txt`
-2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit critique '{"attacker":"[X]","target":"[Y]","round":2}' /tmp/crucible_[X]_[Y]_c2.txt || true`
 
 Immediately show the user each critique:
 ```
@@ -182,10 +168,6 @@ Defend your position against all attacks above. Concede valid points and fix the
 
 Collect each result as `[AGENT_X_R2]`.
 
-**Viewer — after each defense:** for each agent X:
-1. Write `[AGENT_X_R2]` to `/tmp/crucible_[X]_d2.txt`
-2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit defense '{"agent":"[X]","round":2}' /tmp/crucible_[X]_d2.txt || true`
-
 Immediately show the user each defense:
 ```
 #### [X]'s Defense & Refined Position
@@ -225,9 +207,10 @@ Then in 2-3 sentences, explain what the remaining core disagreements are (if DIV
 
 Collect result as `[CONVERGENCE]`.
 
-**Viewer — emit convergence:**
-1. Write `[CONVERGENCE]` to `/tmp/crucible_conv.txt`
-2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit convergence '{"result":"[first word of CONVERGENCE — CONVERGED or DIVERGED]"}' /tmp/crucible_conv.txt || true`
+**Viewer — emit `convergence`:**
+```bash
+[ -f /tmp/crucible_emit ] && /tmp/crucible_emit convergence '{"result":"[first word of CONVERGENCE — CONVERGED or DIVERGED]"}' || true
+```
 
 Immediately show the user:
 ```
@@ -275,10 +258,6 @@ Opponent ([Y]) refined solution to critique:
 
 Collect each result as `[AGENT_X_ATTACKS_AGENT_Y_R3]`.
 
-**Viewer — after each critique:** for each pair (X, Y):
-1. Write `[AGENT_X_ATTACKS_AGENT_Y_R3]` to `/tmp/crucible_[X]_[Y]_c3.txt`
-2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit critique '{"attacker":"[X]","target":"[Y]","round":3}' /tmp/crucible_[X]_[Y]_c3.txt || true`
-
 Immediately show the user each critique:
 ```
 #### [X] attacks [Y] (Round 3)
@@ -323,10 +302,6 @@ This is your final round. Give your definitive, fully-refined position. Concede 
 ```
 
 Collect each result as `[AGENT_X_R3]`.
-
-**Viewer — after each defense:** for each agent X:
-1. Write `[AGENT_X_R3]` to `/tmp/crucible_[X]_d3.txt`
-2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit defense '{"agent":"[X]","round":3}' /tmp/crucible_[X]_d3.txt || true`
 
 Immediately show the user each final position:
 ```
@@ -398,10 +373,6 @@ Agent [X] (Round 1):
 
 Read the complete debate transcript above. Score all [NUMBER_OF_AGENTS] agents. Synthesize the definitive final answer.
 ```
-
-**Viewer — after arbiter output:**
-1. Write the arbiter's full output to `/tmp/crucible_final.txt`
-2. Run: `[ -f /tmp/crucible_emit ] && /tmp/crucible_emit final_answer '{}' /tmp/crucible_final.txt || true`
 
 Show the arbiter's full output to the user immediately under:
 ```
