@@ -7,29 +7,49 @@ A Claude Code plugin that pits multiple AI agents against each other in adversar
 ## How It Works
 
 ```
-Round 1     Agent 1 proposes ─── Agent 2 proposes ─── … Agent N proposes
-                  │                     │                      │
-Round 1.5   Each agent self-critiques and hardens its own proposal
-                  │                     │                      │
-            ┌─────┴─────────────────────┴──────────────────────┴─────┐
-            │                    ADAPTIVE LOOP                       │
-            │  Round K   Every agent attacks every other agent       │
-            │            (N×(N-1) critiques, focused on FOCUS_AREAS) │
-            │                │                                       │
-            │            Every agent defends against all attacks     │
-            │                │                                       │
-            │            Convergence check (haiku)                   │
-            │            → CONVERGED? exit loop                      │
-            │            → DIVERGED? extract focus areas, loop       │
-            │            → Max rounds? exit loop                     │
-            └────────────────────────────────────────────────────────┘
-                  │
-                  └──────────────── Arbiter ──────────────────┐
-                                Reads full transcript          │
-                                Scores all N agents (/60)      │
-                                May SEND_BACK for 1 more round │
-                                Synthesizes final answer       │
-                                ───────────────────────────────┘
+                    ┌─────────┐   ┌─────────┐   ┌─────────┐
+                    │ Agent 1 │   │ Agent 2 │   │ Agent N │
+                    └────┬────┘   └────┬────┘   └────┬────┘
+                         │             │              │
+  Round 1                ▼             ▼              ▼
+  Propose           ┌─────────────────────────────────────┐
+                    │   Each agent proposes independently  │
+                    └──────────────────┬──────────────────┘
+                                       │
+  Round 1.5                            ▼
+  Self-Critique     ┌─────────────────────────────────────┐
+                    │  Each agent attacks its own proposal │
+                    │  and produces a hardened position    │
+                    └──────────────────┬──────────────────┘
+                                       │
+                    ┌──────────────────────────────────────────┐
+                    │            ADAPTIVE  LOOP                │
+                    │                                          │
+  Round K           │  ┌────────────────────────────────────┐  │
+  Cross-Attack      │  │  Every agent attacks every other   │  │
+                    │  │  N×(N-1) critiques in parallel     │  │
+                    │  └─────────────────┬──────────────────┘  │
+                    │                    │                      │
+  Defend            │  ┌─────────────────▼──────────────────┐  │
+                    │  │  Every agent defends and refines   │  │
+                    │  └─────────────────┬──────────────────┘  │
+                    │                    │                      │
+  Converge?         │  ┌─────────────────▼──────────────────┐  │
+                    │  │  CONVERGED ──────────► exit loop   │  │
+                    │  │  DIVERGED ───► focus areas ► loop  │  │
+                    │  │  Max rounds ─────────► exit loop   │  │
+                    │  └────────────────────────────────────┘  │
+                    └──────────────────┬───────────────────────┘
+                                       │
+                                       ▼
+                    ┌─────────────────────────────────────┐
+                    │              ARBITER                 │
+                    │                                     │
+                    │  • Reads full transcript             │
+                    │  • Scores all agents (/60)           │
+                    │  • May send back for 1 more round    │
+                    │  • Synthesizes final answer           │
+                    └─────────────────────────────────────┘
 ```
 
 Debaters have access to `Read`, `Grep`, `Glob`, and `WebSearch` to gather evidence. The arbiter always uses Opus.
