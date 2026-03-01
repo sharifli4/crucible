@@ -2,6 +2,8 @@
 
 A Claude Code plugin that pits multiple AI agents against each other in adversarial debate. Agents independently propose solutions, self-critique, then attack and defend across adaptive rounds until they converge on the strongest answer. An arbiter scores every position and synthesizes the final result.
 
+![Crucible Demo](demo/crucible-demo.gif)
+
 ## How It Works
 
 ```
