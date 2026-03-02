@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "crucible",
-      "source": ".",
+      "source": "./",
       "description": "Two debater agents directly argue with each other across multiple rounds until they converge on the most correct answer — then an arbiter synthesizes the final result",
       "version": "1.0.0",
       "author": {
