@@ -1,6 +1,6 @@
 ---
 description: Run N debater agents (2–5) that propose, self-critique, cross-attack, and defend across adaptive rounds until they converge on the best answer
-argument-hint: [--agents N] [--model sonnet|opus] [--rounds N] <task description>
+argument-hint: "[--agents N] [--model sonnet|opus] [--rounds N] <task description>"
 allowed-tools: [Agent, Read, Write, Bash]
 ---
 
