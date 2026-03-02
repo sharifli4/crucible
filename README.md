@@ -56,22 +56,11 @@ Debaters have access to `Read`, `Grep`, `Glob`, and `WebSearch` to gather eviden
 
 ## Install
 
-```bash
-git clone https://github.com/sharifli4/crucible.git
+In Claude Code, run:
+
 ```
-
-Add to `~/.claude/settings.json`:
-
-```json
-{
-  "pluginDirectories": ["/path/to/crucible"]
-}
-```
-
-Or load for a single session:
-
-```bash
-claude --plugin-dir /path/to/crucible
+/plugin marketplace add sharifli4/crucible
+/plugin install crucible@crucible-marketplace
 ```
 
 Requires [Claude Code](https://claude.ai/code) with a valid Anthropic API key.
@@ -98,7 +87,9 @@ Requires [Claude Code](https://claude.ai/code) with a valid Anthropic API key.
 
 ```
 crucible/
-├── .claude-plugin/plugin.json
+├── .claude-plugin/
+│   ├── plugin.json
+│   └── marketplace.json
 ├── commands/crucible.md
 ├── agents/
 │   ├── debater.md
