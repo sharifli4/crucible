@@ -56,6 +56,7 @@ Initialize tracking variables:
 - `CONVERGED = false`
 - `SEND_BACK_USED = false`
 - `FOCUS_AREAS = []` (empty initially)
+- `SHARED_EVIDENCE = []` (accumulates all `[EVIDENCE]` citations from every agent across every phase — used to build the shared evidence board so agents don't talk past each other on factual matters)
 - For each agent X: `AGENT_X_LATEST = ""` (will hold most recent position)
 
 All subsequent steps use `TASK` as the task and `AGENTS` as the list of agent names.
@@ -164,6 +165,8 @@ Propose your complete solution independently. Let your persona shape your approa
 
 Collect each result as `[AGENT_X_R1]`. Set `AGENT_X_LATEST = AGENT_X_R1` for each agent.
 
+**Extract Evidence:** For each agent X, scan `[AGENT_X_R1]` for sentences containing `[EVIDENCE]`. For each found, append to `SHARED_EVIDENCE`: `- [X, Round 1, PROPOSE]: <the full evidence sentence including source citation>`. Skip exact duplicates.
+
 Immediately show the user each agent's opening position:
 ```
 #### Agent [X]'s Opening Position
@@ -201,6 +204,8 @@ Attack your own solution. Find every weakness — assume an expert opponent will
 ```
 
 Collect each result as `[AGENT_X_SELF_CRITIQUE]`. Set `AGENT_X_LATEST = AGENT_X_SELF_CRITIQUE` for each agent.
+
+**Extract Evidence:** For each agent X, scan `[AGENT_X_SELF_CRITIQUE]` for sentences containing `[EVIDENCE]`. For each found, append to `SHARED_EVIDENCE`: `- [X, Round 1.5, SELF_CRITIQUE]: <the full evidence sentence including source citation>`. Skip exact duplicates.
 
 **Extract Self-Critique Digests:** For each agent X, extract the `### What Changed` and `### Remaining Risks` sections from `[AGENT_X_SELF_CRITIQUE]` and store their combined text as `[AGENT_X_SELF_CRITIQUE_DIGEST]`.
 
@@ -246,6 +251,15 @@ Your current position:
 Opponent ([Y]) position to critique:
 [AGENT_Y_LATEST]
 
+[If SHARED_EVIDENCE is non-empty:]
+=== SHARED EVIDENCE BOARD ===
+The following evidence has been gathered by all agents across prior rounds. Do not repeat tool calls for evidence already listed here — build on it or challenge it instead.
+[For each entry in SHARED_EVIDENCE:]
+[entry]
+[end repeat]
+=== END EVIDENCE BOARD ===
+[End if]
+
 [If FOCUS_AREAS is non-empty:]
 The convergence check identified these specific unresolved disagreements. Focus your attack on these areas:
 [For each area in FOCUS_AREAS:]
@@ -257,6 +271,8 @@ Attack [Y]'s solution through your persona's lens. Find every flaw. Show why you
 ```
 
 Collect each result as `[AGENT_X_ATTACKS_AGENT_Y_R{CURRENT_ROUND}]`.
+
+**Extract Evidence:** For each attack output, scan for sentences containing `[EVIDENCE]`. For each found, append to `SHARED_EVIDENCE`: `- [X, Round {CURRENT_ROUND}, CRITIQUE of Y]: <the full evidence sentence including source citation>`. Skip exact duplicates.
 
 Immediately show the user each critique:
 ```
@@ -298,10 +314,21 @@ Your current position:
 
 [critique block for X]
 
+[If SHARED_EVIDENCE is non-empty:]
+=== SHARED EVIDENCE BOARD ===
+The following evidence has been gathered by all agents across prior rounds. Do not repeat tool calls for evidence already listed here — build on it or challenge it instead.
+[For each entry in SHARED_EVIDENCE:]
+[entry]
+[end repeat]
+=== END EVIDENCE BOARD ===
+[End if]
+
 [If CURRENT_ROUND == MAX_ROUNDS:]This is your final round. Give your definitive, fully-refined position. Concede anything truly wrong. Defend everything that holds.[Else:]Defend your position against all attacks above. Concede valid points and fix them. Refute invalid attacks. Produce your unified refined solution.[End if]
 ```
 
 Collect each result as `[AGENT_X_R{CURRENT_ROUND}]`. Set `AGENT_X_LATEST = AGENT_X_R{CURRENT_ROUND}` for each agent.
+
+**Extract Evidence:** For each defense output, scan for sentences containing `[EVIDENCE]`. For each found, append to `SHARED_EVIDENCE`: `- [X, Round {CURRENT_ROUND}, DEFEND]: <the full evidence sentence including source citation>`. Skip exact duplicates.
 
 **Extract Round Digests:** For each agent X, extract the `### Round Digest` section from `[AGENT_X_R{CURRENT_ROUND}]` and store it as `[AGENT_X_DIGEST_R{CURRENT_ROUND}]`. This is everything from `### Round Digest` up to (but not including) the next `###` heading or end of output.
 
@@ -491,10 +518,21 @@ The arbiter has sent this back for one more round. Focus ONLY on these specific 
 - [area]
 [end repeat]
 
+[If SHARED_EVIDENCE is non-empty:]
+=== SHARED EVIDENCE BOARD ===
+The following evidence has been gathered by all agents across prior rounds. Do not repeat tool calls for evidence already listed here — build on it or challenge it instead.
+[For each entry in SHARED_EVIDENCE:]
+[entry]
+[end repeat]
+=== END EVIDENCE BOARD ===
+[End if]
+
 Attack [Y]'s solution on these specific points through your persona's lens. Be precise and targeted.
 ```
 
 Collect results. Show critiques to user.
+
+**Extract Evidence:** For each attack output, scan for sentences containing `[EVIDENCE]`. For each found, append to `SHARED_EVIDENCE`: `- [X, Send-back, CRITIQUE of Y]: <the full evidence sentence including source citation>`. Skip exact duplicates.
 
 Launch **all defenses in parallel** using the `crucible:debater` agent. For each agent X, set `model = AGENT_X_MODEL`:
 
@@ -510,6 +548,15 @@ Your current position:
 [AGENT_X_LATEST]
 
 [critique block for X from the send-back attacks]
+
+[If SHARED_EVIDENCE is non-empty:]
+=== SHARED EVIDENCE BOARD ===
+The following evidence has been gathered by all agents across prior rounds. Do not repeat tool calls for evidence already listed here — build on it or challenge it instead.
+[For each entry in SHARED_EVIDENCE:]
+[entry]
+[end repeat]
+=== END EVIDENCE BOARD ===
+[End if]
 
 The arbiter sent this back for one final round. This is your absolute last chance to refine. Give your definitive position.
 ```

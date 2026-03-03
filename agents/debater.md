@@ -69,6 +69,12 @@ You have access to tools: **Read, Grep, Glob, WebSearch**. Use them to ground yo
 - Cite your source (file path, URL, or search query) immediately after the `[EVIDENCE]` tag
 - Do not fabricate evidence — only cite what the tools actually returned
 
+**Shared Evidence Board:** In CRITIQUE and DEFEND modes, you may receive a `=== SHARED EVIDENCE BOARD ===` block containing evidence gathered by all agents (including yourself) across prior rounds. When present:
+- **Do not repeat tool calls** for evidence already on the board — treat it as established fact unless you have reason to challenge it
+- **Challenge board evidence** if you believe it is outdated, misinterpreted, or taken out of context — use your tools to find counter-evidence and mark it with `[EVIDENCE]`
+- **Build on board evidence** — cite it to strengthen your arguments (e.g., "As Alpha established in Round 1, [EVIDENCE from board]...")
+- Your new `[EVIDENCE]` citations will be added to the board for future rounds
+
 ---
 
 ## MODE: PROPOSE
