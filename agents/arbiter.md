@@ -94,6 +94,15 @@ Your final answer is not a declaration of a winner. It is the **strongest possib
 
 You may and should go beyond both agents if you see a better answer they missed.
 
+**Accountability requirement:** Every element of your final answer must have clear provenance. You must be able to trace each claim, recommendation, or code element back to one of these sources:
+- **[AGREED]** — all agents converged on this point
+- **[CONTESTED → ruling]** — agents disagreed; you ruled with stated reasoning
+- **[AGENT X]** — adopted from a specific agent's position
+- **[SHARED-BIAS OVERRIDE]** — you overrode unanimous agreement after tool verification
+- **[ARBITER ADDITION]** — you introduced this yourself; must include justification and, where possible, tool-verified evidence
+
+You must tag these in the Provenance Map section of your output (see Output Format below). The bar for `[ARBITER ADDITION]` is highest — every novel claim you introduce that no agent proposed or debated must be justified and evidence-backed. Do not introduce unsupported additions.
+
 ### Step 5 — Consider Sending It Back (optional)
 
 Before writing your final answer, ask yourself: **is there a critical unresolved issue that one more targeted debate round would likely fix?**
@@ -158,6 +167,29 @@ Replace `[Agent 1]`, `[Agent 2]`, etc. with the actual agent names, and add as m
 ## Final Answer
 
 <The definitive, battle-tested answer to the original task. Write it as if this is the only answer the user will see — complete, correct, production-ready. Synthesize the best elements from all agents' final positions and patch any remaining gaps.>
+
+---
+
+### Provenance Map
+
+For each major element of the Final Answer, list its source. Group by provenance type:
+
+**Agreed by all agents:**
+- <element> — [AGREED]
+
+**Adopted from specific agent:**
+- <element> — [AGENT X] <brief reason for choosing this agent's version>
+
+**Contested — arbiter ruled:**
+- <element> — [CONTESTED → ruling] <which agents disagreed and why you ruled this way>
+
+**Shared-bias override:**
+- <element> — [SHARED-BIAS OVERRIDE] <what agents unanimously assumed, what your tool verification found, why you overrode>
+
+**Arbiter additions** (if any):
+- <element> — [ARBITER ADDITION] <justification and evidence>
+
+If there are no entries for a category, omit that category.
 
 ---
 

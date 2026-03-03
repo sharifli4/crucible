@@ -1,6 +1,6 @@
 ---
 description: Run N debater agents (2–5) that propose, self-critique, cross-attack, and defend across adaptive rounds until they converge on the best answer
-argument-hint: "[--agents N] [--model sonnet|opus] [--rounds N] <task description>"
+argument-hint: "[--agents N] [--model sonnet|opus|haiku] [--rounds N] <task description>"
 allowed-tools: [Agent, Read, Write, Bash]
 ---
 
@@ -19,8 +19,8 @@ Arguments received: `$ARGUMENTS`
 1. Extract optional flags from `$ARGUMENTS`:
    - **If** `--agents N` is present (where N is an integer 2–5): set `NUMBER_OF_AGENTS = N`, set `AGENTS_EXPLICIT = true`, and remove it from the arguments
    - **Otherwise:** set `NUMBER_OF_AGENTS = 2`, set `AGENTS_EXPLICIT = false`
-   - **If** `--model MODEL` is present (where MODEL is `sonnet` or `opus`): set `DEBATER_MODEL = MODEL` and remove it from the arguments
-   - **Otherwise:** set `DEBATER_MODEL = sonnet`
+   - **If** `--model MODEL` is present (where MODEL is `sonnet`, `opus`, or `haiku`): set `DEBATER_MODEL = MODEL`, set `MODEL_EXPLICIT = true`, and remove it from the arguments
+   - **Otherwise:** set `MODEL_EXPLICIT = false`
    - **If** `--rounds N` is present (where N is an integer 2–5): set `MAX_ROUNDS = N` and remove it from the arguments
    - **Otherwise:** set `MAX_ROUNDS = 5`
 2. Set `TASK` = remaining arguments after all flags are stripped and trimmed
@@ -29,13 +29,13 @@ Agent name pool (in order): **Alpha, Beta, Gamma, Delta, Epsilon**
 
 Each agent has a **persona** that forces a distinct reasoning lens. Assign personas in order:
 
-| Agent   | Persona | Lens |
-|---------|---------|------|
-| Alpha   | Correctness-First | Prioritize being provably correct. Favor well-tested, standards-compliant approaches. Willing to sacrifice elegance for reliability. |
-| Beta    | Simplicity-First | Prioritize the simplest solution that works. Favor minimal dependencies, fewer moving parts, less code. Challenge unnecessary complexity. |
-| Gamma   | Devil's Advocate | Challenge the obvious answer. Look for non-obvious failure modes, adversarial inputs, and hidden assumptions. Propose alternatives others wouldn't consider. |
-| Delta   | Pragmatist | Prioritize real-world production concerns: maintainability, performance at scale, operational cost, team familiarity. Favor battle-tested over novel. |
-| Epsilon | Innovator | Prioritize modern best practices and novel approaches. Challenge legacy patterns. Favor cutting-edge solutions when they offer genuine advantages. |
+| Agent   | Persona | Lens | Default Model |
+|---------|---------|------|:-------------:|
+| Alpha   | Correctness-First | Prioritize being provably correct. Favor well-tested, standards-compliant approaches. Willing to sacrifice elegance for reliability. | opus |
+| Beta    | Simplicity-First | Prioritize the simplest solution that works. Favor minimal dependencies, fewer moving parts, less code. Challenge unnecessary complexity. | sonnet |
+| Gamma   | Devil's Advocate | Challenge the obvious answer. Look for non-obvious failure modes, adversarial inputs, and hidden assumptions. Propose alternatives others wouldn't consider. | opus |
+| Delta   | Pragmatist | Prioritize real-world production concerns: maintainability, performance at scale, operational cost, team familiarity. Favor battle-tested over novel. | sonnet |
+| Epsilon | Innovator | Prioritize modern best practices and novel approaches. Challenge legacy patterns. Favor cutting-edge solutions when they offer genuine advantages. | opus |
 
 Assign `AGENTS = [first NUMBER_OF_AGENTS names from the pool]`. Examples:
 - N=2 → [Alpha, Beta]
@@ -44,6 +44,12 @@ Assign `AGENTS = [first NUMBER_OF_AGENTS names from the pool]`. Examples:
 - N=5 → [Alpha, Beta, Gamma, Delta, Epsilon]
 
 For each agent X, store `AGENT_X_PERSONA` = the Lens text from the table above.
+
+For each agent X:
+- If `MODEL_EXPLICIT == true`: set `AGENT_X_MODEL = DEBATER_MODEL`
+- Else: set `AGENT_X_MODEL` = the Default Model from the table above
+
+Mixed models are the default because different models have different reasoning patterns and blind spots. A debate between opus and sonnet surfaces flaws that two instances of the same model would both miss. Use `--model` to override this when you want uniform models (e.g., `--model haiku` for cost savings).
 
 Initialize tracking variables:
 - `CURRENT_ROUND = 1`
@@ -133,8 +139,8 @@ Tell the user:
 ## Crucible started
 
 **Task:** [TASK]
-**Agents:** [AGENTS joined by ", "] ([NUMBER_OF_AGENTS] agents)
-**Debater model:** [DEBATER_MODEL]
+**Agents:** [For each agent X: "[X] ([AGENT_X_MODEL])"] joined by ", "
+**Model strategy:** [If MODEL_EXPLICIT: "[DEBATER_MODEL] (uniform)" | Else: "mixed (opus + sonnet for model diversity)"]
 **Max rounds:** [MAX_ROUNDS]
 
 ---
@@ -143,7 +149,7 @@ Tell the user:
 [AGENTS joined by ", "] are independently forming their positions...
 ```
 
-Launch **all agents in parallel** using the `crucible:debater` agent with `model = DEBATER_MODEL`. For **each agent X** in AGENTS:
+Launch **all agents in parallel** using the `crucible:debater` agent. For **each agent X** in AGENTS, set `model = AGENT_X_MODEL`:
 
 **Prompt:**
 ```
@@ -178,7 +184,7 @@ Tell the user:
 Each agent is attacking their own proposal to find and fix weaknesses before opponents see it...
 ```
 
-Launch **all agents in parallel** using the `crucible:debater` agent with `model = DEBATER_MODEL`. For **each agent X** in AGENTS:
+Launch **all agents in parallel** using the `crucible:debater` agent. For **each agent X** in AGENTS, set `model = AGENT_X_MODEL`:
 
 **Prompt:**
 ```
@@ -224,7 +230,7 @@ Tell the user:
 Every agent is attacking every other agent's position. Running [NUMBER_OF_AGENTS * (NUMBER_OF_AGENTS - 1)] critiques in parallel...
 ```
 
-Launch **all critiques in parallel** using the `crucible:debater` agent with `model = DEBATER_MODEL`. For every **ordered pair (X, Y)** where X ≠ Y in AGENTS (full round-robin):
+Launch **all critiques in parallel** using the `crucible:debater` agent. For every **ordered pair (X, Y)** where X ≠ Y in AGENTS (full round-robin), set `model = AGENT_X_MODEL` (the attacker's model):
 
 **Prompt for X attacking Y:**
 ```
@@ -270,7 +276,7 @@ Tell the user:
 Each agent is now responding to all attacks and refining their position...
 ```
 
-Launch **all defenses in parallel** using the `crucible:debater` agent with `model = DEBATER_MODEL`. For **each agent X** in AGENTS:
+Launch **all defenses in parallel** using the `crucible:debater` agent. For **each agent X** in AGENTS, set `model = AGENT_X_MODEL`:
 
 Build a **critique block** for X by collecting all `[AGENT_Y_ATTACKS_AGENT_X_R{CURRENT_ROUND}]` for every Y ≠ X, formatted as:
 ```
@@ -464,7 +470,7 @@ Running targeted attack + defense round...
 
 **Run one targeted round:**
 
-Launch **all critiques in parallel** for every ordered pair (X, Y) where X ≠ Y:
+Launch **all critiques in parallel** using the `crucible:debater` agent. For every ordered pair (X, Y) where X ≠ Y, set `model = AGENT_X_MODEL`:
 
 **Prompt for X attacking Y:**
 ```
@@ -490,7 +496,7 @@ Attack [Y]'s solution on these specific points through your persona's lens. Be p
 
 Collect results. Show critiques to user.
 
-Launch **all defenses in parallel** for each agent X:
+Launch **all defenses in parallel** using the `crucible:debater` agent. For each agent X, set `model = AGENT_X_MODEL`:
 
 **Prompt for agent X:**
 ```
@@ -572,6 +578,53 @@ Collect result as `[ARBITER_OUTPUT]`.
 
 ---
 
+## ARBITER AUDIT
+
+Before showing the verdict, run a lightweight cross-check to catch unsupported arbiter claims.
+
+Launch a **single Sonnet agent** (using `model = sonnet`, `max_turns = 2`):
+
+```
+You are an auditor. Compare the arbiter's final answer against the agents' final positions to check for accountability issues.
+
+TASK: [TASK]
+
+AGENTS' FINAL POSITIONS:
+[For each agent X in AGENTS:]
+Agent [X]:
+[AGENT_X_LATEST]
+
+[end repeat]
+
+ARBITER'S VERDICT:
+[ARBITER_OUTPUT]
+
+Check for these issues:
+
+1. **Unsupported additions**: Claims in the Final Answer that no agent proposed, defended, or debated — AND that the arbiter did not tag as [ARBITER ADDITION] with justification in the Provenance Map.
+2. **Unverified shared-bias overrides**: Any [SHARED-BIAS OVERRIDE] in the Provenance Map where the arbiter did not cite tool-verified evidence.
+3. **Unjustified contested rulings**: Any [CONTESTED → ruling] where the arbiter's reasoning is circular, missing, or doesn't engage with the losing agent's argument.
+4. **Missing provenance**: Elements of the Final Answer that appear in neither the agents' positions nor the Provenance Map.
+
+For each issue found, output one line:
+FLAG: <category> — <specific element> — <why this is a problem>
+
+If no issues found, output exactly: CLEAN
+
+Be strict but fair. Do NOT flag:
+- The arbiter choosing one agent's approach over another (that's the arbiter's job)
+- Minor wording differences between the final answer and agent positions
+- The arbiter combining elements from multiple agents (that's expected)
+```
+
+Collect result as `[AUDIT_RESULT]`.
+
+**Parse the result:**
+- If the first word is `CLEAN`: proceed to output with no flags.
+- Otherwise: extract all lines starting with `FLAG:` as `AUDIT_FLAGS`.
+
+---
+
 ## OUTPUT
 
 Show the arbiter's full output to the user:
@@ -579,4 +632,20 @@ Show the arbiter's full output to the user:
 ### Arbiter's Verdict
 
 [ARBITER_OUTPUT]
+```
+
+**If `AUDIT_FLAGS` is non-empty**, append:
+```
+
+---
+
+### Audit Flags
+
+The following elements of the arbiter's verdict could not be fully traced to the debate record:
+
+[For each flag in AUDIT_FLAGS:]
+- [flag]
+[end repeat]
+
+> These flags highlight areas where the arbiter's reasoning may warrant closer review. They do not necessarily indicate errors.
 ```
