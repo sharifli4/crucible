@@ -77,6 +77,8 @@ Requires [Claude Code](https://claude.ai/code) with a valid Anthropic API key.
 | `--model` | sonnet | Model for debaters (`sonnet` or `opus`) |
 | `--rounds` | 5 | Max cross-attack rounds (2-5, exits early on convergence) |
 
+> **Cost note:** Each cross-attack round runs N×(N-1) critiques in parallel. With 2 agents that's 2 critiques/round; with 5 agents it's 20 critiques/round. A full 5-agent, 5-round run can exceed 80 agent calls. Start with 2-3 agents for most tasks.
+
 ```bash
 /crucible implement a thread-safe LRU cache in Python
 /crucible --agents 3 should we use event sourcing or CRUD for a high-write system?

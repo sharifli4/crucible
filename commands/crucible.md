@@ -27,11 +27,23 @@ Arguments received: `$ARGUMENTS`
 
 Agent name pool (in order): **Alpha, Beta, Gamma, Delta, Epsilon**
 
+Each agent has a **persona** that forces a distinct reasoning lens. Assign personas in order:
+
+| Agent   | Persona | Lens |
+|---------|---------|------|
+| Alpha   | Correctness-First | Prioritize being provably correct. Favor well-tested, standards-compliant approaches. Willing to sacrifice elegance for reliability. |
+| Beta    | Simplicity-First | Prioritize the simplest solution that works. Favor minimal dependencies, fewer moving parts, less code. Challenge unnecessary complexity. |
+| Gamma   | Devil's Advocate | Challenge the obvious answer. Look for non-obvious failure modes, adversarial inputs, and hidden assumptions. Propose alternatives others wouldn't consider. |
+| Delta   | Pragmatist | Prioritize real-world production concerns: maintainability, performance at scale, operational cost, team familiarity. Favor battle-tested over novel. |
+| Epsilon | Innovator | Prioritize modern best practices and novel approaches. Challenge legacy patterns. Favor cutting-edge solutions when they offer genuine advantages. |
+
 Assign `AGENTS = [first NUMBER_OF_AGENTS names from the pool]`. Examples:
 - N=2 → [Alpha, Beta]
 - N=3 → [Alpha, Beta, Gamma]
 - N=4 → [Alpha, Beta, Gamma, Delta]
 - N=5 → [Alpha, Beta, Gamma, Delta, Epsilon]
+
+For each agent X, store `AGENT_X_PERSONA` = the Lens text from the table above.
 
 Initialize tracking variables:
 - `CURRENT_ROUND = 1`
@@ -67,9 +79,11 @@ Launch **all agents in parallel** using the `crucible:debater` agent with `model
 ```
 You are Agent [X]. MODE: PROPOSE
 
+Your persona: [AGENT_X_PERSONA]
+
 Task: [TASK]
 
-Propose your complete solution independently. Do not hold back — this is your opening position.
+Propose your complete solution independently. Let your persona shape your approach — it should influence which trade-offs you prioritize and which risks you weight most heavily. Do not hold back — this is your opening position.
 ```
 
 Collect each result as `[AGENT_X_R1]`. Set `AGENT_X_LATEST = AGENT_X_R1` for each agent.
@@ -99,6 +113,8 @@ Launch **all agents in parallel** using the `crucible:debater` agent with `model
 **Prompt:**
 ```
 You are Agent [X]. MODE: SELF_CRITIQUE
+
+Your persona: [AGENT_X_PERSONA]
 
 Task: [TASK]
 
@@ -144,6 +160,8 @@ Launch **all critiques in parallel** using the `crucible:debater` agent with `mo
 ```
 You are Agent [X]. MODE: CRITIQUE
 
+Your persona: [AGENT_X_PERSONA]
+
 Task: [TASK]
 
 Your current position:
@@ -159,7 +177,7 @@ The convergence check identified these specific unresolved disagreements. Focus 
 [end repeat]
 [End if]
 
-Attack [Y]'s solution. Find every flaw. Show why your approach is stronger.[If CURRENT_ROUND > 2:] Focus on what still remains weak or wrong.[End if]
+Attack [Y]'s solution through your persona's lens. Find every flaw. Show why your approach is stronger.[If CURRENT_ROUND > 2:] Focus on what still remains weak or wrong.[End if]
 ```
 
 Collect each result as `[AGENT_X_ATTACKS_AGENT_Y_R{CURRENT_ROUND}]`.
@@ -195,6 +213,8 @@ Build a **critique block** for X by collecting all `[AGENT_Y_ATTACKS_AGENT_X_R{C
 ```
 You are Agent [X]. MODE: DEFEND
 
+Your persona: [AGENT_X_PERSONA]
+
 Task: [TASK]
 
 Your current position:
@@ -227,7 +247,7 @@ Tell the user:
 Checking whether all agents have reached agreement...
 ```
 
-Launch a **single Haiku agent**:
+Launch a **single Sonnet agent** (using `model = sonnet`):
 ```
 TASK: [TASK]
 
@@ -380,6 +400,8 @@ Launch **all critiques in parallel** for every ordered pair (X, Y) where X ≠ Y
 ```
 You are Agent [X]. MODE: CRITIQUE
 
+Your persona: [AGENT_X_PERSONA]
+
 Task: [TASK]
 
 Your current position:
@@ -393,7 +415,7 @@ The arbiter has sent this back for one more round. Focus ONLY on these specific 
 - [area]
 [end repeat]
 
-Attack [Y]'s solution on these specific points. Be precise and targeted.
+Attack [Y]'s solution on these specific points through your persona's lens. Be precise and targeted.
 ```
 
 Collect results. Show critiques to user.
@@ -403,6 +425,8 @@ Launch **all defenses in parallel** for each agent X:
 **Prompt for agent X:**
 ```
 You are Agent [X]. MODE: DEFEND
+
+Your persona: [AGENT_X_PERSONA]
 
 Task: [TASK]
 
