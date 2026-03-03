@@ -17,8 +17,8 @@ Show the user what is happening at every step. Do not wait until the end to reve
 Arguments received: `$ARGUMENTS`
 
 1. Extract optional flags from `$ARGUMENTS`:
-   - **If** `--agents N` is present (where N is an integer 2–5): set `NUMBER_OF_AGENTS = N` and remove it from the arguments
-   - **Otherwise:** set `NUMBER_OF_AGENTS = 2`
+   - **If** `--agents N` is present (where N is an integer 2–5): set `NUMBER_OF_AGENTS = N`, set `AGENTS_EXPLICIT = true`, and remove it from the arguments
+   - **Otherwise:** set `NUMBER_OF_AGENTS = 2`, set `AGENTS_EXPLICIT = false`
    - **If** `--model MODEL` is present (where MODEL is `sonnet` or `opus`): set `DEBATER_MODEL = MODEL` and remove it from the arguments
    - **Otherwise:** set `DEBATER_MODEL = sonnet`
    - **If** `--rounds N` is present (where N is an integer 2–5): set `MAX_ROUNDS = N` and remove it from the arguments
@@ -53,6 +53,76 @@ Initialize tracking variables:
 - For each agent X: `AGENT_X_LATEST = ""` (will hold most recent position)
 
 All subsequent steps use `TASK` as the task and `AGENTS` as the list of agent names.
+
+---
+
+## PRE-DEBATE — Task Clarification & Complexity Assessment
+
+Before launching agents, check whether the task has ambiguities that would cause agents to waste rounds debating interpretation rather than substance. Also assess task complexity to recommend an appropriate agent count.
+
+Launch a **single Sonnet agent** (using `model = sonnet`, `max_turns = 2`):
+
+```
+Analyze this task for critical ambiguities and assess its complexity.
+
+Task: [TASK]
+
+## Part 1: Ambiguity Check
+
+Rules:
+- Only flag ambiguities that would cause DIFFERENT SOLUTIONS, not minor details agents can reasonably decide themselves.
+- Do NOT flag things like coding style, variable naming, or minor design preferences.
+- Do NOT flag things the debate process itself is designed to resolve (e.g., "which algorithm is best").
+- DO flag: missing constraints (language? scale? environment?), contradictory requirements, unclear scope (build from scratch vs. use existing?), critical unstated assumptions.
+
+## Part 2: Complexity Assessment
+
+Recommend how many debater agents (2-5) this task warrants based on:
+- **2 agents**: Focused questions with a clear correct answer, bug fixes, single-function implementations, factual lookups
+- **3 agents**: Design decisions with 2-3 valid approaches, moderate architecture choices, tasks where a devil's advocate adds value
+- **4 agents**: Complex system design, tasks with multiple competing concerns (correctness vs. performance vs. simplicity vs. operability), cross-cutting architectural decisions
+- **5 agents**: High-stakes decisions with many valid perspectives, large-scale architecture, tasks where missing a single concern is costly
+
+## Output Format
+
+First line: CLEAR or AMBIGUOUS
+
+If AMBIGUOUS, list 1-3 questions, one per line, each prefixed with "Q:". Each question should be specific, actionable, and offer 2-3 concrete options where possible.
+
+Last line (always): AGENTS: N (where N is 2-5) followed by a short reason in parentheses.
+Example: AGENTS: 3 (design trade-off with multiple valid approaches)
+```
+
+Collect result as `[CLARIFICATION_CHECK]`.
+
+**Parse the result:**
+- Extract ambiguity: if the first word is `CLEAR` or `AMBIGUOUS`
+- Extract agent recommendation: find the line starting with `AGENTS:`, parse the number as `RECOMMENDED_AGENTS` and the parenthetical as `RECOMMENDATION_REASON`
+
+**If AMBIGUOUS:** extract all lines starting with `Q:` (without the prefix) as clarification questions. Present the questions to the user using `AskUserQuestion`. For each extracted question, create a question entry. Use the user's answers to refine the task:
+
+Set `TASK` = original TASK + the following appended block:
+```
+
+Clarifications:
+[For each question-answer pair:]
+- [question] → [user's answer]
+[end repeat]
+```
+
+Tell the user:
+```
+> Task clarified.
+```
+
+**If `AGENTS_EXPLICIT == false` AND `RECOMMENDED_AGENTS != NUMBER_OF_AGENTS`:**
+
+Set `NUMBER_OF_AGENTS = RECOMMENDED_AGENTS`. Re-assign `AGENTS` from the name pool using the new count. Re-assign `AGENT_X_PERSONA` for each agent.
+
+Tell the user:
+```
+> Auto-selected [NUMBER_OF_AGENTS] agents ([RECOMMENDATION_REASON]).
+```
 
 ---
 
